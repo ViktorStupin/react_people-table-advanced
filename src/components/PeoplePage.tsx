@@ -65,14 +65,15 @@ export const PeoplePage = () => {
       result = result.filter(
         p =>
           p.name.toLowerCase().includes(q) ||
-          (p.motherName && p.motherName.toLowerCase().includes(q)) ||
-          (p.fatherName && p.fatherName.toLowerCase().includes(q))
+          ((p.motherName || '').toLowerCase().includes(q)) ||
+          ((p.fatherName || '').toLowerCase().includes(q))
       );
     }
 
     // Filter by centuries
     if (centuries.length > 0) {
       result = result.filter(p => {
+        if (typeof p.born !== 'number') return false;
         const bornCentury = Math.ceil(p.born / 100);
         return centuries.includes(String(bornCentury));
       });
@@ -85,13 +86,15 @@ export const PeoplePage = () => {
         const valB = b[sortField];
 
         if (sortField === 'born' || sortField === 'died') {
-          // Numerical sorting for years
-          return sortOrder === 'desc' ? valB - valA : valA - valB;
+          // Stable numeric sorting with missing value handling
+          const numA = typeof valA === 'number' ? valA : Number.POSITIVE_INFINITY;
+          const numB = typeof valB === 'number' ? valB : Number.POSITIVE_INFINITY;
+          return sortOrder === 'desc' ? numB - numA : numA - numB;
         }
 
         // Case-insensitive string sorting for name and sex
-        const strA = String(valA).toLowerCase();
-        const strB = String(valB).toLowerCase();
+        const strA = String(valA || '').toLowerCase();
+        const strB = String(valB || '').toLowerCase();
 
         if (strA < strB) return sortOrder === 'desc' ? 1 : -1;
         if (strA > strB) return sortOrder === 'desc' ? -1 : 1;

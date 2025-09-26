@@ -1,10 +1,11 @@
-import { useLocation } from 'react-router-dom';
-import { SearchLink } from './SearchLink';
+import { useLocation, Link, useSearchParams } from 'react-router-dom';
+import { getSearchWith } from '../utils/searchHelper';
 
 const ACTIVE_NAV_LINK_CLASS = 'has-background-grey-lighter';
 
 export const Navbar = () => {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const isHome = location.pathname === '/';
   const isPeople = location.pathname.startsWith('/people');
@@ -18,19 +19,25 @@ export const Navbar = () => {
     >
       <div className="container">
         <div className="navbar-brand">
-          <SearchLink
-            params={{}}
+          <Link
+            to={{
+              pathname: '/',
+              search: getSearchWith(searchParams, {}),
+            }}
             className={`navbar-item ${isHome ? ACTIVE_NAV_LINK_CLASS : ''}`}
           >
             Home
-          </SearchLink>
+          </Link>
 
-          <SearchLink
-            params={{}}
+          <Link
+            to={{
+              pathname: '/people',
+              search: getSearchWith(searchParams, {}),
+            }}
             className={`navbar-item ${isPeople ? ACTIVE_NAV_LINK_CLASS : ''}`}
           >
             People
-          </SearchLink>
+          </Link>
         </div>
       </div>
     </nav>

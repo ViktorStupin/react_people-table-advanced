@@ -46,13 +46,18 @@ export const PeopleTable: React.FC<Props> = ({
   const peopleMap = useMemo(() => {
     const map = new Map<string, Person>();
     people.forEach(person => {
-      map.set(person.name, person);
+      map.set(person.name.toLowerCase().trim(), person);
     });
     return map;
   }, [people]);
 
-  // Функція для обробки кліку з запобіганням стандартній поведінці
+  // Функція для обробки кліку з підтримкою модифікаторів
   const handleLinkClick = (e: React.MouseEvent, slug: string) => {
+    // Дозволяємо стандартну поведінку для модифікованих кліків (Ctrl+click, Middle click)
+    if (e.ctrlKey || e.metaKey || e.button === 1) {
+      return;
+    }
+
     e.preventDefault();
     onSelectPerson(slug);
   };
@@ -125,73 +130,70 @@ export const PeopleTable: React.FC<Props> = ({
       </thead>
 
       <tbody>
-        {people.map(person => (
-          <tr
-            key={person.slug}
-            data-cy="person"
-            className={person.slug === selectedSlug ? 'has-background-warning' : ''}
-          >
-            <td>
-              <a
-                href={`#/people/${person.slug}${hrefSuffix}`}
-                className={person.sex === 'f' ? 'has-text-danger' : ''}
-                onClick={(e) => handleLinkClick(e, person.slug)}
-              >
-                {person.name}
-              </a>
-            </td>
-            <td>{person.sex}</td>
-            <td>{person.born}</td>
-            <td>{person.died}</td>
-            <td>
-              {person.motherName ? (
-                (() => {
-                  const mother = peopleMap.get(person.motherName);
-                  return mother ? (
+        {people.map(person => {
+          const mother = person.motherName
+            ? peopleMap.get(person.motherName.toLowerCase().trim())
+            : null;
+          const father = person.fatherName
+            ? peopleMap.get(person.fatherName.toLowerCase().trim())
+            : null;
+
+          return (
+            <tr
+              key={person.slug}
+              data-cy="person"
+              className={person.slug === selectedSlug ? 'has-background-warning' : ''}
+            >
+              <td>
+                <a
+                  href={`#/people/${person.slug}${hrefSuffix}`}
+                  className={person.sex === 'f' ? 'has-text-danger' : ''}
+                  onClick={(e) => handleLinkClick(e, person.slug)}
+                >
+                  {person.name}
+                </a>
+              </td>
+              <td>{person.sex}</td>
+              <td>{person.born}</td>
+              <td>{person.died}</td>
+              <td>
+                {person.motherName ? (
+                  mother ? (
                     <a
                       href={`#/people/${mother.slug}${hrefSuffix}`}
                       className="has-text-danger"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onSelectPerson(mother.slug);
-                      }}
+                      onClick={(e) => handleLinkClick(e, mother.slug)}
                     >
                       {person.motherName}
                     </a>
                   ) : (
                     // Матері немає в таблиці - показуємо як текст
                     person.motherName
-                  );
-                })()
-              ) : (
-                '-'
-              )}
-            </td>
-            <td>
-              {person.fatherName ? (
-                (() => {
-                  const father = peopleMap.get(person.fatherName);
-                  return father ? (
+                  )
+                ) : (
+                  '-'
+                )}
+              </td>
+              <td>
+                {person.fatherName ? (
+                  father ? (
                     <a
                       href={`#/people/${father.slug}${hrefSuffix}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onSelectPerson(father.slug);
-                      }}
+                      onClick={(e) => handleLinkClick(e, father.slug)}
                     >
                       {person.fatherName}
                     </a>
                   ) : (
                     // Батька немає в таблиці - показуємо як текст
                     person.fatherName
-                  );
-                })()
-              ) : (
-                '-'
-              )}
-            </td>
-          </tr>
-        ))}
+                  )
+                ) : (
+                  '-'
+                )}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
