@@ -7,14 +7,15 @@ export const PeopleFilters = () => {
   const query = searchParams.get('query') || '';
   const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    const newParams = new URLSearchParams(searchParams);
 
     if (value) {
-      searchParams.set('query', value);
+      newParams.set('query', value);
     } else {
-      searchParams.delete('query');
+      newParams.delete('query');
     }
 
-    setSearchParams(searchParams);
+    setSearchParams(newParams);
   };
 
   const sex = searchParams.get('sex');
@@ -35,13 +36,11 @@ export const PeopleFilters = () => {
     const newParams = new URLSearchParams(searchParams);
 
     if (centuries.includes(century)) {
-      // Remove this century
       newParams.delete('centuries');
       centuries
         .filter(c => c !== century)
         .forEach(c => newParams.append('centuries', c));
     } else {
-      // Add this century
       newParams.append('centuries', century);
     }
 
@@ -49,7 +48,7 @@ export const PeopleFilters = () => {
   };
 
   const resetFilters = () => {
-    setSearchParams({});
+    setSearchParams(new URLSearchParams());
   };
 
   return (
@@ -120,7 +119,6 @@ export const PeopleFilters = () => {
               className="button is-success is-outlined"
               onClick={() => {
                 const newParams = new URLSearchParams(searchParams);
-
                 newParams.delete('centuries');
                 setSearchParams(newParams);
               }}

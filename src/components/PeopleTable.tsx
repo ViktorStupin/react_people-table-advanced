@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 /* eslint-disable jsx-a11y/control-has-associated-label */
 type Person = {
   slug: string;
@@ -16,6 +18,7 @@ type Props = {
   onSort: (field: string) => void;
   onSelectPerson: (slug: string) => void;
   selectedSlug?: string;
+  searchParams: URLSearchParams;
 };
 
 export const PeopleTable: React.FC<Props> = ({
@@ -25,6 +28,7 @@ export const PeopleTable: React.FC<Props> = ({
   onSort,
   onSelectPerson,
   selectedSlug,
+  searchParams,
 }) => {
   const renderSortIcon = (field: string) => {
     if (sortField !== field) {
@@ -38,16 +42,23 @@ export const PeopleTable: React.FC<Props> = ({
     return <i className="fas fa-sort-up" />;
   };
 
-  // Функція для знаходження людини за іменем
-  const findPersonByName = (name: string) => {
-    return people.find(person => person.name === name);
-  };
+  // Create lookup map for efficient parent search
+  const peopleMap = useMemo(() => {
+    const map = new Map<string, Person>();
+    people.forEach(person => {
+      map.set(person.name, person);
+    });
+    return map;
+  }, [people]);
 
   // Функція для обробки кліку з запобіганням стандартній поведінці
   const handleLinkClick = (e: React.MouseEvent, slug: string) => {
     e.preventDefault();
     onSelectPerson(slug);
   };
+
+  const searchString = searchParams.toString();
+  const hrefSuffix = searchString ? `?${searchString}` : '';
 
   return (
     <table
@@ -118,15 +129,13 @@ export const PeopleTable: React.FC<Props> = ({
           <tr
             key={person.slug}
             data-cy="person"
-            className={
-              person.slug === selectedSlug ? 'has-background-warning' : ''
-            }
+            className={person.slug === selectedSlug ? 'has-background-warning' : ''}
           >
             <td>
               <a
-                href={`#/people/${person.slug}`}
+                href={`#/people/${person.slug}${hrefSuffix}`}
                 className={person.sex === 'f' ? 'has-text-danger' : ''}
-                onClick={e => handleLinkClick(e, person.slug)}
+                onClick={(e) => handleLinkClick(e, person.slug)}
               >
                 {person.name}
               </a>
@@ -136,45 +145,47 @@ export const PeopleTable: React.FC<Props> = ({
             <td>{person.died}</td>
             <td>
               {person.motherName ? (
-                findPersonByName(person.motherName) ? (
-                  <a
-                    href={`#/people/${findPersonByName(person.motherName)!.slug}`}
-                    className="has-text-danger"
-                    onClick={e => {
-                      e.preventDefault();
-                      onSelectPerson(
-                        findPersonByName(person.motherName!)!.slug,
-                      );
-                    }}
-                  >
-                    {person.motherName}
-                  </a>
-                ) : (
-                  // Матері немає в таблиці - показуємо як текст
-                  person.motherName
-                )
+                (() => {
+                  const mother = peopleMap.get(person.motherName);
+                  return mother ? (
+                    <a
+                      href={`#/people/${mother.slug}${hrefSuffix}`}
+                      className="has-text-danger"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onSelectPerson(mother.slug);
+                      }}
+                    >
+                      {person.motherName}
+                    </a>
+                  ) : (
+                    // Матері немає в таблиці - показуємо як текст
+                    person.motherName
+                  );
+                })()
               ) : (
                 '-'
               )}
             </td>
             <td>
               {person.fatherName ? (
-                findPersonByName(person.fatherName) ? (
-                  <a
-                    href={`#/people/${findPersonByName(person.fatherName)!.slug}`}
-                    onClick={e => {
-                      e.preventDefault();
-                      onSelectPerson(
-                        findPersonByName(person.fatherName!)!.slug,
-                      );
-                    }}
-                  >
-                    {person.fatherName}
-                  </a>
-                ) : (
-                  // Батька немає в таблиці - показуємо як текст
-                  person.fatherName
-                )
+                (() => {
+                  const father = peopleMap.get(person.fatherName);
+                  return father ? (
+                    <a
+                      href={`#/people/${father.slug}${hrefSuffix}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onSelectPerson(father.slug);
+                      }}
+                    >
+                      {person.fatherName}
+                    </a>
+                  ) : (
+                    // Батька немає в таблиці - показуємо як текст
+                    person.fatherName
+                  );
+                })()
               ) : (
                 '-'
               )}

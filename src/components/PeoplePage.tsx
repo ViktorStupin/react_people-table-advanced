@@ -1,23 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  useSearchParams,
-  useLocation,
-  useNavigate,
-  useParams,
-} from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { PeopleFilters } from './PeopleFilters';
 import { Loader } from './Loader';
 import { PeopleTable } from './PeopleTable';
 
 type Person = {
+  slug: string;
   name: string;
+  sex: 'm' | 'f';
+  born: number;
+  died: number;
   motherName?: string;
   fatherName?: string;
-  born: number;
-  died?: number;
-  sex?: string;
-  slug: string;
 };
 
 export const PeoplePage = () => {
@@ -39,15 +34,22 @@ export const PeoplePage = () => {
   // --- Load people ---
   useEffect(() => {
     setLoading(true);
+    setError(false);
+
     fetch('/people.json')
       .then(res => {
-        if (!res.ok) throw new Error('Error loading');
+        if (!res.ok) {
+          throw new Error('Error loading');
+        }
         return res.json();
       })
-      .then((data: unknown) => {
-        if (Array.isArray(data)) setPeople(data as Person[]);
-        else setError(true);
-        setError(false);
+      .then(data => {
+        if (Array.isArray(data)) {
+          setPeople(data);
+          setError(false);
+        } else {
+          throw new Error('Invalid data format');
+        }
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -60,16 +62,17 @@ export const PeoplePage = () => {
     // Filter by query
     if (query) {
       const q = query.toLowerCase();
-      result = result.filter((p: Person) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.motherName && p.motherName.toLowerCase().includes(q)) ||
-        (p.fatherName && p.fatherName.toLowerCase().includes(q))
+      result = result.filter(
+        p =>
+          p.name.toLowerCase().includes(q) ||
+          (p.motherName && p.motherName.toLowerCase().includes(q)) ||
+          (p.fatherName && p.fatherName.toLowerCase().includes(q))
       );
     }
 
     // Filter by centuries
     if (centuries.length > 0) {
-      result = result.filter((p: Person) => {
+      result = result.filter(p => {
         const bornCentury = Math.ceil(p.born / 100);
         return centuries.includes(String(bornCentury));
       });
@@ -77,19 +80,18 @@ export const PeoplePage = () => {
 
     // Sorting
     if (sortField) {
-      type SortableField = keyof Person;
-      result.sort((a: Person, b: Person) => {
-        const valA = a[sortField as SortableField];
-        const valB = b[sortField as SortableField];
+      result.sort((a, b) => {
+        const valA = a[sortField];
+        const valB = b[sortField];
 
         if (sortField === 'born' || sortField === 'died') {
-          return sortOrder === 'desc'
-            ? (valB as number) - (valA as number)
-            : (valA as number) - (valB as number);
+          // Numerical sorting for years
+          return sortOrder === 'desc' ? valB - valA : valA - valB;
         }
 
-        const strA = String(valA);
-        const strB = String(valB);
+        // Case-insensitive string sorting for name and sex
+        const strA = String(valA).toLowerCase();
+        const strB = String(valB).toLowerCase();
 
         if (strA < strB) return sortOrder === 'desc' ? 1 : -1;
         if (strA > strB) return sortOrder === 'desc' ? -1 : 1;
@@ -118,10 +120,12 @@ export const PeoplePage = () => {
     setSearchParams(newParams);
   };
 
-  // --- Select person (avoid shadowing slug) ---
+  // --- Select person (keep filters in URL) ---
   const handleSelectPerson = (personSlug: string) => {
     navigate(`/people/${personSlug}${location.search}`);
   };
+
+  const showFilters = !loading && !error;
 
   return (
     <>
@@ -129,13 +133,10 @@ export const PeoplePage = () => {
 
       <div className="block">
         <div className="columns is-desktop is-flex-direction-row-reverse">
-          {/* Filters only if people are loaded */}
-          {people.length > 0 && (
+          {/* Filters only when people are successfully loaded */}
+          {showFilters && (
             <div className="column is-7-tablet is-narrow-desktop">
-              <PeopleFilters
-                searchParams={searchParams}
-                setSearchParams={setSearchParams}
-              />
+              <PeopleFilters />
             </div>
           )}
 
@@ -143,12 +144,12 @@ export const PeoplePage = () => {
             <div className="box table-container">
               {loading && <Loader />}
 
-              {error && <p data-cy="peopleLoadingError">Something went wrong</p>}
+              {error && (
+                <p data-cy="peopleLoadingError">Something went wrong</p>
+              )}
 
               {!loading && !error && people.length === 0 && (
-                <p data-cy="noPeopleMessage">
-                  There are no people on the server
-                </p>
+                <p data-cy="noPeopleMessage">There are no people on the server</p>
               )}
 
               {!loading && !error && people.length > 0 && (
@@ -159,6 +160,7 @@ export const PeoplePage = () => {
                   onSort={handleSort}
                   onSelectPerson={handleSelectPerson}
                   selectedSlug={slug}
+                  searchParams={searchParams}
                 />
               )}
             </div>

@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { SearchLink } from './SearchLink';
 
 const ACTIVE_NAV_LINK_CLASS = 'has-background-grey-lighter';
 
@@ -17,19 +18,19 @@ export const Navbar = () => {
     >
       <div className="container">
         <div className="navbar-brand">
-          <a
+          <SearchLink
+            params={{}}
             className={`navbar-item ${isHome ? ACTIVE_NAV_LINK_CLASS : ''}`}
-            href="#/"
           >
             Home
-          </a>
+          </SearchLink>
 
-          <a
+          <SearchLink
+            params={{}}
             className={`navbar-item ${isPeople ? ACTIVE_NAV_LINK_CLASS : ''}`}
-            href="#/people"
           >
             People
-          </a>
+          </SearchLink>
         </div>
       </div>
     </nav>
